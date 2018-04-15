@@ -34,6 +34,12 @@ Vue.component('app-footer', {
 const Upload = Vue.component('upload-form', {
     template: `
     <form method="post" enctype="multipart/form-data" @submit.prevent="uploadPhoto" id="uploadForm">
+      <div v-if="showMessage">
+        <div v-if="error" class="alert alert-danger">
+          <li v-for="m in message">{{ m }}</li>
+        </div>
+        <div v-else class="alert alert-success" v-for="m in message" v-text="m"></div>
+      </div>
       <h1>Upload Form</h1>
       <p>Description</p>
       <div class="form-group">
@@ -43,7 +49,7 @@ const Upload = Vue.component('upload-form', {
       <div class="form-group">
         <input type="file" name="photo"/>
       </div>
-      <button type="submit" name="submit" class="btn btn-primary">Submit</button>
+      <button @click="showMessage = true" type="submit" name="submit" class="btn btn-primary">Submit</button>
     </form>
     `,
     
@@ -51,6 +57,9 @@ const Upload = Vue.component('upload-form', {
         uploadPhoto: function() {
             let uploadForm = document.getElementById('uploadForm');
             let form_data = new FormData(uploadForm); 
+            let prop = "";
+            let self = this;
+            self.message = []
             
             fetch("/api/upload", {
                 method: 'POST',
@@ -65,12 +74,35 @@ const Upload = Vue.component('upload-form', {
             })
             .then(function (jsonResponse) {
                 console.log(jsonResponse);
+                
+                for (p in jsonResponse) {
+                    prop = p;
+                }
+                if (prop == "errors") {
+                    self.error = true;
+                    for (msg in jsonResponse.errors) {
+                        self.message.push(jsonResponse.errors[msg]["message"]);
+                    }
+                } else {
+                    self.error = false;
+                    self.message.push(jsonResponse['message']);
+                }
+                
             })
             .catch(function (error) {
                 console.log(error);
             });
         }
+    },
+    
+    data: function () {
+        return {
+            showMessage: false,
+            message: [],
+            error: false
+        }
     }
+  
 });
 
 const Home = Vue.component('home', {
